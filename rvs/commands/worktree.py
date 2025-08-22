@@ -147,6 +147,11 @@ class WorktreeCommand(BaseCommand):
         with open(gitdir_file, 'w') as f:
             f.write(str(self.repo.rvs_dir))
         
+        # 3.5. Create worktree file to store the actual worktree path
+        worktree_file = worktree_metadata_dir / 'worktree'
+        with open(worktree_file, 'w') as f:
+            f.write(str(worktree_path))
+        
         # 4. Create HEAD file in metadata directory
         head_file = worktree_metadata_dir / 'HEAD'
         if detach or not branch_name:
@@ -202,7 +207,7 @@ class WorktreeCommand(BaseCommand):
             
             for wt in worktrees:
                 short_hash = wt['commit'][:7] if wt['commit'] != "0000000" else wt['commit']
-                branch_info = f"[{wt['branch']}]" if wt['branch'] else "[detached]"
+                branch_info = f"[{wt['branch']}]" if wt['branch'] else "(detached HEAD)"
                 print(f"{wt['path']}  {short_hash} {branch_info}")
     
     def remove_worktree(self, worktree_path: str, force: bool = False):
@@ -256,7 +261,37 @@ class WorktreeCommand(BaseCommand):
     
     def move_worktree(self, worktree_path: str, new_path: str):
         """Move a working tree."""
-        print(f"Move worktree from {worktree_path} to {new_path} (not implemented)")
+        self.repo._ensure_repo_exists()
+        
+        old_path = Path(worktree_path).resolve()
+        new_path_resolved = Path(new_path).resolve()
+        
+        # Validate old worktree exists
+        if not old_path.exists():
+            raise RVSError(f"'{worktree_path}' does not exist")
+        
+        # Check if it's a valid worktree
+        rvs_file = old_path / '.rvs'
+        if not rvs_file.is_file():
+            raise RVSError(f"'{worktree_path}' is not a working tree")
+        
+        # Check if new path already exists
+        if new_path_resolved.exists():
+            raise RVSError(f"'{new_path}' already exists")
+        
+        # Read worktree metadata
+        with open(rvs_file, 'r') as f:
+            content = f.read().strip()
+            if not content.startswith('rvsdir: '):
+                raise RVSError(f"Invalid .rvs file format")
+            metadata_dir = Path(content[8:])
+        
+        # Move the worktree directory
+        import shutil
+        shutil.move(str(old_path), str(new_path_resolved))
+        
+        # Update metadata files
+        self._update_worktree_location(metadata_dir, new_path_resolved)
     
     def lock_worktree(self, worktree_path: str, reason: Optional[str] = None):
         """Lock a working tree."""
@@ -386,13 +421,13 @@ class WorktreeCommand(BaseCommand):
             if wt_dir.is_dir():
                 gitdir_file = wt_dir / 'gitdir'
                 head_file = wt_dir / 'HEAD'
+                worktree_file = wt_dir / 'worktree'
                 
-                if gitdir_file.exists() and head_file.exists():
+                if gitdir_file.exists() and head_file.exists() and worktree_file.exists():
                     try:
-                        with open(gitdir_file, 'r') as f:
-                            gitdir_path = f.read().strip()
-                        
-                        wt_path = Path(gitdir_path).parent
+                        # Read the actual worktree path
+                        with open(worktree_file, 'r') as f:
+                            wt_path = f.read().strip()
                         
                         with open(head_file, 'r') as f:
                             head_content = f.read().strip()
@@ -405,7 +440,7 @@ class WorktreeCommand(BaseCommand):
                             commit = head_content
                         
                         worktrees.append({
-                            'path': str(wt_path),
+                            'path': wt_path,
                             'branch': branch,
                             'commit': commit
                         })
@@ -426,6 +461,13 @@ class WorktreeCommand(BaseCommand):
                     lock_file = metadata_dir / 'locked'
                     return lock_file.exists()
         return False
+    
+    def _update_worktree_location(self, metadata_dir: Path, new_path: Path):
+        """Update worktree metadata to reflect new location."""
+        # Update the worktree file with new path
+        worktree_file = metadata_dir / 'worktree'
+        with open(worktree_file, 'w') as f:
+            f.write(str(new_path))
     
     def _resolve_commit(self, commit_ish: str) -> str:
         """Resolve commit-ish to commit hash."""

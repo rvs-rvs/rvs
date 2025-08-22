@@ -8,7 +8,7 @@ with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name="rvs",
-    version="2.1.0",
+    version="2.1.1",
     description="Robust Versioning System - Git-style version control built for universal compatibility",
     long_description=long_description,
     long_description_content_type="text/markdown",

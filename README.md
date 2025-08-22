@@ -1,7 +1,7 @@
 # 🚀 RVS - Robust Versioning System
 
 [![Python Version](https://img.shields.io/badge/python-3.6%2B-blue.svg)](https://python.org)
-[![Version](https://img.shields.io/badge/version-2.0.1-green.svg)](https://github.com/rvs-rvs/rvs)
+[![Version](https://img.shields.io/badge/version-2.1.1-green.svg)](https://github.com/rvs-rvs/rvs)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Keywords](https://img.shields.io/badge/keywords-python%20git%20version--control%20python--3%20pypi%20rvs-blue.svg)](#)
 
@@ -20,15 +20,39 @@
 - Scenarios with network limitations or security constraints
 - Personal project archiving and backup systems
 
+## 🆕 What's New in v2.1.1
+
+**Enhanced Worktree Support**: Complete Git-compatible worktree implementation
+- Full worktree lifecycle management (add, list, remove, lock/unlock)
+- Git-compatible `.rvs` file structure for seamless interoperability
+- Independent HEAD, index, and working directory per worktree
+
+**Detached HEAD Operations**: Comprehensive support for detached HEAD workflows
+- Checkout commits directly with `--detach` option
+- Create branches from detached HEAD state
+- Proper status display and commit operations in detached mode
+
+**New Git Commands**: Extended command set for better Git compatibility
+- `rvs show` - Display commit information with multiple output formats
+- `rvs diff-tree` - Compare tree objects between commits
+- `rvs reset` - Reset HEAD, index, and working tree with `--soft`, `--mixed`, `--hard` modes
+
+**Improved Reliability**: Enhanced error handling and cross-platform compatibility
+- Better path normalization for Windows/Linux/macOS
+- Robust index state management
+- Improved uncommitted changes detection
+
 ## ✨ Features
 
 - 🔧 **Complete Git-like Interface** - Familiar commands and workflows
 - 🐍 **Self-Contained Architecture** - Zero external dependencies required
 - 📦 **Universal Installation** - Install via pip or run directly on any Python platform
-- 🌳 **Full Branching Support** - Create, switch, and merge branches
+- 🌳 **Full Branching Support** - Create, switch, and merge branches with detached HEAD support
 - 📝 **Staging Area** - Add and commit changes with precision
 - 📚 **Commit History** - View and navigate project history
-- 🔄 **Advanced Operations** - Rebase, stash, worktree management
+- 🔄 **Advanced Operations** - Rebase, stash, comprehensive worktree management
+- 🏢 **Multi-Worktree Support** - Git-compatible worktree functionality for parallel development
+- 🎯 **Detached HEAD Operations** - Full support for detached HEAD workflows
 - 🛠️ **Extensible Architecture** - Clean, modular codebase
 - 🎯 **Local-First Design** - Focused on local operations without remote dependencies
 
@@ -88,6 +112,9 @@ RVS supports all essential local Git operations:
 | `commit` | Create a commit | `rvs commit -m "message"` |
 | `status` | Show repository status | `rvs status` |
 | `log` | Show commit history | `rvs log` |
+| `show` | Display commit information | `rvs show HEAD --name-status` |
+| `diff-tree` | Compare tree objects | `rvs diff-tree --name-status -r HEAD` |
+| `reset` | Reset HEAD, index, and working tree | `rvs reset --hard HEAD~1` |
 | `branch` | List or create branches | `rvs branch feature` |
 | `checkout` | Switch branches or restore files | `rvs checkout main` |
 | `merge` | Join development histories | `rvs merge feature` |
@@ -135,9 +162,24 @@ rvs stash
 
 # Work with multiple worktrees
 rvs worktree add ../hotfix hotfix-branch
+rvs worktree list
+rvs worktree remove ../hotfix
+
+# Detached HEAD operations
+rvs checkout --detach HEAD~2
+rvs checkout -b new-feature  # Create branch from detached HEAD
+
+# Reset operations
+rvs reset --soft HEAD~1      # Reset HEAD only
+rvs reset --mixed HEAD~1     # Reset HEAD and index (default)
+rvs reset --hard HEAD~1      # Reset HEAD, index, and working tree
 
 # Interactive rebase (reapply commits)
 rvs rebase main
+
+# Show commit details
+rvs show HEAD --name-status  # Show files changed in commit
+rvs show HEAD --stat         # Show diffstat
 
 # Restore specific files from a commit
 rvs restore --source=HEAD~1 file.txt
@@ -159,7 +201,63 @@ rvs ls-files
 rvs ls-tree HEAD
 ```
 
-## 🏗️ Architecture
+## 🏢 Worktree Management
+
+RVS provides comprehensive Git-compatible worktree functionality, allowing you to work on multiple branches simultaneously:
+
+### Creating and Managing Worktrees
+
+```bash
+# Create a new worktree for a feature branch
+rvs worktree add ../feature-branch feature
+
+# Create a worktree in detached HEAD state
+rvs worktree add ../hotfix HEAD~2
+
+# List all worktrees
+rvs worktree list
+# Output:
+# /path/to/main/repo    abc1234 [main]
+# /path/to/feature      def5678 [feature]
+# /path/to/hotfix       ghi9012 (detached HEAD)
+
+# Remove a worktree
+rvs worktree remove ../feature-branch
+
+# Lock/unlock worktrees
+rvs worktree lock ../feature-branch
+rvs worktree unlock ../feature-branch
+```
+
+### Worktree Benefits
+
+- **Parallel Development**: Work on multiple features simultaneously
+- **Git Compatibility**: Uses the same `.rvs` file structure as Git worktrees
+- **Independent State**: Each worktree has its own HEAD, index, and working directory
+- **Shared History**: All worktrees share the same commit history and branches
+- **Detached HEAD Support**: Create worktrees in detached HEAD state for experimental work
+
+### Detached HEAD Workflows
+
+RVS fully supports detached HEAD operations for experimental development:
+
+```bash
+# Enter detached HEAD state
+rvs checkout --detach HEAD~3
+
+# Make experimental changes
+echo "experimental feature" > experiment.txt
+rvs add experiment.txt
+rvs commit -m "Experimental feature"
+
+# Create a branch from detached HEAD
+rvs checkout -b experiment-branch
+
+# Or return to a branch, leaving experimental commits
+rvs checkout main
+```
+
+## 🏧 Architecture
 
 RVS is built with a robust, modular architecture designed for reliability and portability:
 
@@ -188,7 +286,7 @@ usage: rvs [-h] [--repo REPO] [--version] {command} ...
 RVS - Robust Versioning System
 
 positional arguments:
-  {init,add,commit,status,log,branch,checkout,merge,rebase,restore,rm,ls-files,ls-tree,worktree,stash}
+  {init,add,commit,status,log,show,diff-tree,reset,branch,checkout,merge,rebase,restore,rm,ls-files,ls-tree,worktree,stash}
                         Available commands
 
 options:

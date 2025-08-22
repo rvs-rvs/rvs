@@ -9,10 +9,12 @@ from .status import StatusCommand
 from .log import LogCommand
 from .branch import BranchCommand
 from .checkout import CheckoutCommand
+from .switch import SwitchCommand
 from .merge import MergeCommand
 from .rebase import RebaseCommand
 from .restore import RestoreCommand
 from .rm import RmCommand
+from .mv import MvCommand
 from .ls_files import LsFilesCommand
 from .ls_tree import LsTreeCommand
 from .worktree import WorktreeCommand
@@ -30,10 +32,12 @@ __all__ = [
     "LogCommand",
     "BranchCommand",
     "CheckoutCommand",
+    "SwitchCommand",
     "MergeCommand",
     "RebaseCommand",
     "RestoreCommand",
     "RmCommand",
+    "MvCommand",
     "LsFilesCommand",
     "LsTreeCommand",
     "WorktreeCommand",

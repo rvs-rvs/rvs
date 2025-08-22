@@ -2,7 +2,7 @@
 RVS - Robust Versioning System
 Git-style version control built for universal compatibility and deployment simplicity.
 """
-__version__ = "2.1.0"
+__version__ = "2.1.1"
 __author__ = "RVS"
 __description__ = "Robust Versioning System - Git-style version control built for universal compatibility"
 from .core.repository import RVS

@@ -383,7 +383,7 @@ class MergeCommand(BaseCommand):
                             except Exception:
                                 continue
         
-        raise RVSError(f"Not a valid commit: {commit_ish}")
+        raise RVSError(f"merge: {commit_ish} - not something we can merge")
     
     def _find_merge_base(self, commit1: str, commit2: str) -> str:
         """Find the merge base (common ancestor) of two commits."""

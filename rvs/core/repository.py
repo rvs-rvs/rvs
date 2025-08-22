@@ -176,6 +176,9 @@ class RVS:
             rel_path = abs_path.relative_to(self.repo_path)
             # Convert back to string with forward slashes (Git style)
             normalized = str(rel_path).replace('\\', '/')
+            # Remove any leading './' if present
+            if normalized.startswith('./'):
+                normalized = normalized[2:]
             return normalized
         except ValueError:
             # Path is outside repo, return as-is
@@ -364,7 +367,19 @@ class RVS:
         """Show repository status."""
         self._ensure_repo_exists()
         current_branch = self._get_current_branch()
-        print(f"On branch {current_branch}")
+        
+        if current_branch == "HEAD":
+            # Detached HEAD state
+            commit_hash = self._get_branch_commit("HEAD")
+            if commit_hash:
+                if self.is_worktree:
+                    print("Not currently on any branch.")
+                else:
+                    print(f"HEAD detached at {commit_hash[:8]}")
+            else:
+                print("HEAD detached")
+        else:
+            print(f"On branch {current_branch}")
         
         # Get current commit files
         current_commit = self._get_branch_commit(current_branch)
@@ -520,10 +535,45 @@ class RVS:
                 if oneline:
                     short_hash = commit_hash[:7]
                     message = commit['message'].split('\n')[0]
-                    branch_info = f" (HEAD -> {current_branch})" if is_head else ""
+                    
+                    # Build branch info
+                    branch_info = ""
+                    if is_head:
+                        if current_branch == "HEAD":
+                            # Detached HEAD - just show (HEAD)
+                            branch_info = " (HEAD)"
+                        else:
+                            # Normal branch - show (HEAD -> branch)
+                            branch_info = f" (HEAD -> {current_branch})"
+                    else:
+                        # Check if this commit is pointed to by any branch
+                        for branch_file in self.heads_dir.iterdir():
+                            if branch_file.is_file():
+                                with open(branch_file, 'r') as f:
+                                    if f.read().strip() == commit_hash:
+                                        branch_info = f" ({branch_file.name})"
+                                        break
+                    
                     print(f"{short_hash}{branch_info} {message}")
                 else:
-                    branch_info = f" (HEAD -> {current_branch})" if is_head else ""
+                    # Build branch info for full log
+                    branch_info = ""
+                    if is_head:
+                        if current_branch == "HEAD":
+                            # Detached HEAD - just show (HEAD)
+                            branch_info = " (HEAD)"
+                        else:
+                            # Normal branch - show (HEAD -> branch)
+                            branch_info = f" (HEAD -> {current_branch})"
+                    else:
+                        # Check if this commit is pointed to by any branch
+                        for branch_file in self.heads_dir.iterdir():
+                            if branch_file.is_file():
+                                with open(branch_file, 'r') as f:
+                                    if f.read().strip() == commit_hash:
+                                        branch_info = f" ({branch_file.name})"
+                                        break
+                    
                     print(f"commit {commit_hash}{branch_info}")
                     print(f"Author: {commit.get('author', 'RVS User')} <rvs@example.com>")
                     
@@ -568,16 +618,16 @@ class RVS:
         if head_content.startswith("ref: refs/heads/"):
             return head_content[16:]  # Remove "ref: refs/heads/"
         
-        # For worktrees, if HEAD contains a commit hash, we're in detached HEAD state
-        if self.is_worktree and len(head_content) == 40:  # SHA-1 hash length
+        # If HEAD contains a commit hash (40 chars), we're in detached HEAD state
+        if len(head_content) == 40:  # SHA-1 hash length
             return "HEAD"  # Detached HEAD
         
         return "main"
     
     def _get_branch_commit(self, branch: str) -> Optional[str]:
         """Get the latest commit hash for a branch."""
-        # Special case for detached HEAD in worktrees
-        if self.is_worktree and branch == "HEAD":
+        # Special case for detached HEAD
+        if branch == "HEAD":
             if self.head_file.exists():
                 with open(self.head_file, 'r') as f:
                     head_content = f.read().strip()
@@ -732,11 +782,17 @@ class RVS:
         # Create commit
         commit_hash = self._create_commit(tree_hash, message, parent_commit)
         
-        # Update branch reference
-        self._set_branch_commit(current_branch, commit_hash)
+        # Update branch reference or HEAD (for detached HEAD)
+        if current_branch == "HEAD":
+            # In detached HEAD state, update HEAD directly
+            with open(self.head_file, 'w') as f:
+                f.write(commit_hash)
+        else:
+            # Normal branch, update branch reference
+            self._set_branch_commit(current_branch, commit_hash)
         
         # Update index to match the new commit state (like Git does)
-        # Instead of clearing the index, set it to match the committed files
+        # Set index to match the committed files (this represents the clean state)
         self._save_index(commit_files)
         
         # Run post-commit hook

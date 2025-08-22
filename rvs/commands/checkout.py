@@ -149,6 +149,8 @@ class CheckoutCommand(BaseCommand):
         commit_hash = self.repo._get_branch_commit(branch_name)
         if commit_hash:
             self._update_working_tree(commit_hash)
+            # Update index to match the checked-out commit
+            self._update_index_to_commit(commit_hash)
     
     def _detach_head(self, commit_hash: str):
         """Detach HEAD to point directly to a commit."""
@@ -157,6 +159,9 @@ class CheckoutCommand(BaseCommand):
         
         # Update working tree to match commit
         self._update_working_tree(commit_hash)
+        
+        # Update index to match the checked-out commit
+        self._update_index_to_commit(commit_hash)
     
     def _update_working_tree(self, commit_hash: str):
         """Update working tree to match a commit."""
@@ -261,16 +266,12 @@ class CheckoutCommand(BaseCommand):
     def _has_uncommitted_changes(self) -> bool:
         """Check if there are uncommitted changes."""
         try:
-            # Check if index has changes
-            index = self.repo._load_index()
-            if index:
-                return True
-            
-            # Check for modified files (simplified check)
             current_branch = self.repo._get_current_branch()
             commit_hash = self.repo._get_branch_commit(current_branch)
             if not commit_hash:
-                return False
+                # No commits yet, check if there are staged files
+                index = self.repo._load_index()
+                return bool(index)
             
             # Get committed files
             obj_type, content = self.repo._read_object(commit_hash)
@@ -281,6 +282,17 @@ class CheckoutCommand(BaseCommand):
             commit_data = json.loads(content.decode())
             tree_hash = commit_data['tree']
             committed_files = self.repo._read_tree(tree_hash)
+            
+            # Get staged files
+            index = self.repo._load_index()
+            
+            # Check if index differs from committed files
+            if set(index.keys()) != set(committed_files.keys()):
+                return True  # Different files staged
+            
+            for file_path in index.keys():
+                if index[file_path] != committed_files.get(file_path):
+                    return True  # File content differs
             
             # Check if working tree differs from committed files
             for file_path, committed_hash in committed_files.items():
@@ -296,3 +308,21 @@ class CheckoutCommand(BaseCommand):
             
         except Exception:
             return False  # Assume no changes if we can't determine
+    
+    def _update_index_to_commit(self, commit_hash: str):
+        """Update the index to match a specific commit."""
+        try:
+            obj_type, content = self.repo._read_object(commit_hash)
+            if obj_type != "commit":
+                return
+            
+            import json
+            commit_data = json.loads(content.decode())
+            tree_hash = commit_data['tree']
+            tree_files = self.repo._read_tree(tree_hash)
+            
+            # Set index to match the commit's tree
+            self.repo._save_index(tree_files)
+            
+        except Exception:
+            pass  # Ignore errors

@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2025-08-22
+
+### 🐛 Bug Fixes
+
+#### Worktree Detached HEAD Mode
+- **Fixed Index Management**: Resolved issues with index state in detached HEAD mode
+  - `checkout` command now properly updates index to match checked-out commit
+  - Fixed index synchronization when switching to detached HEAD state
+  - Ensures working tree and index are consistent after checkout operations
+
+- **Improved Uncommitted Changes Detection**: Enhanced logic for detecting uncommitted changes
+  - Better handling of repositories with no commits yet
+  - Proper comparison between staged files and committed files
+  - More accurate detection of working tree modifications
+
+- **Worktree Status Display**: Fixed status output in detached HEAD mode
+  - Detached HEAD now shows "Not currently on any branch." in worktrees
+  - Main repository shows "HEAD detached at [commit]" format
+  - Consistent with Git's status behavior
+
+- **Worktree Listing Improvements**: Enhanced worktree list command output
+  - Detached HEAD worktrees now show "(detached HEAD)" instead of "[detached]"
+  - Added worktree file to store actual worktree path for accurate listing
+  - Better path resolution for worktree metadata
+
+- **Commit Operations in Detached HEAD**: Fixed commit behavior in detached HEAD state
+  - Commits in detached HEAD now properly update HEAD reference
+  - Index correctly reflects committed state after detached HEAD commits
+  - Maintains Git-compatible behavior for detached HEAD workflows
+
+- **Log Display**: Improved commit log formatting for detached HEAD
+  - Shows "(HEAD)" for detached HEAD state instead of branch reference
+  - Proper branch annotation for commits pointed to by branches
+  - Consistent formatting between oneline and full log modes
+
+- **Error Message Consistency**: Updated merge error messages to match Git format
+  - Changed "Not a valid commit" to "merge: [ref] - not something we can merge"
+  - Maintains compatibility with Git's error message format
+
+### 🔧 Technical Improvements
+
+- **Path Normalization**: Enhanced path handling to remove leading "./" prefixes
+- **Index State Management**: More robust index loading and saving operations
+- **Worktree Metadata**: Added worktree file for better path tracking
+- **Error Handling**: Improved exception handling in checkout and index operations
+
+---
+
 ## [2.1.0] - 2025-08-21
 
 ### 🎉 Major Features Added
