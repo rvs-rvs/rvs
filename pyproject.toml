@@ -1,3 +1,52 @@
 [build-system]
-requires = ["setuptools>=45", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "rvs"
+version = "2.1.0"
+description = "Robust Versioning System - Git-style version control built for universal compatibility"
+readme = "README.md"
+license = "MIT"
+authors = [
+    {name = "rvs-rvs", email = "mailto.rvs@usa.com"}
+]
+maintainers = [
+    {name = "rvs-rvs", email = "mailto.rvs@usa.com"}
+]
+keywords = ["python", "git", "version-control", "python-3", "pypi", "rvs", "vcs", "cli", "robust", "portable"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Version Control",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Environment :: Console",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.6"
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/rvs-rvs/rvs"
+Documentation = "https://github.com/rvs-rvs/rvs#readme"
+Repository = "https://github.com/rvs-rvs/rvs"
+"Bug Reports" = "https://github.com/rvs-rvs/rvs/issues"
+Changelog = "https://github.com/rvs-rvs/rvs/blob/main/CHANGELOG.md"
+
+[project.scripts]
+rvs = "rvs.cli:main"
+
+[tool.setuptools]
+packages = ["rvs", "rvs.core", "rvs.commands"]
+
+[tool.setuptools.package-data]
+rvs = ["py.typed"]
