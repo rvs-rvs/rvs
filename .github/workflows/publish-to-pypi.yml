@@ -53,10 +53,10 @@ jobs:
       # IMPORTANT: this permission is mandatory for trusted publishing
       id-token: write
 
-    # Dedicated environments with protections for publishing are strongly recommended.
-    environment:
-      name: pypi
-      url: https://pypi.org/project/rvs/${{ github.event.release.tag_name }}
+    # Note: Using trusted publishing without environment for simplicity
+    # environment:
+    #   name: pypi
+    #   url: https://pypi.org/project/rvs/${{ github.event.release.tag_name }}
 
     steps:
       - name: Retrieve release distributions
